@@ -1,6 +1,6 @@
 package com.technokratos.controller;
 
-import com.technokratos.service.UserService;
+import com.technokratos.userservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
