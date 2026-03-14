@@ -20,7 +20,7 @@ public class PropertiesConfiguration {
     @Bean
     public static YamlPropertiesFactoryBean propertiesFactoryBean() {
         YamlPropertiesFactoryBean propertiesFactoryBean = new YamlPropertiesFactoryBean();
-        propertiesFactoryBean.setResources(new ClassPathResource("database.yml"));
+        propertiesFactoryBean.setResources(new ClassPathResource("application.yml"));
         return propertiesFactoryBean;
     }
 
