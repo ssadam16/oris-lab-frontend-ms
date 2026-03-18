@@ -11,8 +11,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 @Controller
 @RequestMapping("/v1/users")
 @RequiredArgsConstructor
