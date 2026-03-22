@@ -7,10 +7,11 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @Getter
-@Setter
 public class MicroservicesProperties {
 
     @Value("${spring.services.user-service.url}")
     private String userServiceUrl;
 
+    @Value("${spring.services.document-service.url}")
+    private String documentServiceUrl;
 }

@@ -2,3 +2,5 @@ spring:
   services:
     user-service:
       url: http:/localhost:8081/api/v1/users
+    document-service:
+      url: http://185.221.160.131/api/documents
