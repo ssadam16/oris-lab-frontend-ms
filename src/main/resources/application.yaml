@@ -1,3 +1,4 @@
-services:
-  user-service:
-    url: http:/localhost:8081/api/v1
+spring:
+  services:
+    user-service:
+      url: http:/localhost:8081/api/v1/users

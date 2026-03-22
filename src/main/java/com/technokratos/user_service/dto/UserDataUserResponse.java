@@ -1,4 +1,4 @@
-package com.technokratos.userservice.dto;
+package com.technokratos.user_service.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -8,7 +8,7 @@ import lombok.Builder;
 import java.util.UUID;
 
 @Builder
-public record UserResponse(
+public record UserDataUserResponse (
 
         @NotNull(message = "ID не может быть null")
         UUID id,
