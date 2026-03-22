@@ -1,6 +1,10 @@
 spring:
   services:
     user-service:
-      url: http:/localhost:8081/api/v1/users
+      url: http://localhost:8081/api/v1/users
+    card-service:
+      url: http://26.125.164.47:8085/api/v2/cards
+    transfer-service:
+      url: http://localhost:8083/api/v1/transfers
     document-service:
       url: http://185.221.160.131/api/documents
