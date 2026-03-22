@@ -1,5 +1,6 @@
 package com.technokratos.userservice.service;
 
+import com.technokratos.config.MicroservicesProperties;
 import com.technokratos.userservice.dto.UserResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,11 +15,11 @@ import java.util.UUID;
 public class UserService {
 
     private final RestTemplate restTemplate;
-
-    private final String USER_BASE_URL = "%s/user".formatted();
+    private final MicroservicesProperties microservicesProperties;
 
     public UserResponse getUserById(UUID id) {
-        UserResponse user = restTemplate.getForObject("%s/%s".formatted(USER_BASE_URL, id), UserResponse.class);
-        return null;
+        return restTemplate.getForObject(
+                "%s/user/%s".formatted(microservicesProperties.getUserServiceUrl(), id), UserResponse.class
+        );
     }
 }
