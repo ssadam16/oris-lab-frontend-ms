@@ -16,6 +16,7 @@ public class WebApplicationConfig implements WebApplicationInitializer {
 
         context.register(WebConfig.class);
         context.register(PropertiesConfiguration.class);
+        context.register(MicroservicesProperties.class);
 
         servletContext.addListener(new ContextLoaderListener(context));
 

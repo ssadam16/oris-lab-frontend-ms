@@ -108,4 +108,16 @@ public class GlobalExceptionHandler {
 
         return "error/500";
     }
+
+    @ExceptionHandler(Exception.class)
+    public String handleException(Exception ex, Model model) {
+        log.error("Exception: {}", ex.getMessage());
+
+        model.addAttribute("errorCode", "500");
+        model.addAttribute("errorMessage", "Ошибка сервера");
+        model.addAttribute("details", ex.getCause());
+        model.addAttribute("timestamp", LocalDateTime.now());
+
+        return "error/500";
+    }
 }

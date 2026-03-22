@@ -22,9 +22,6 @@ public class TokenFilter implements Filter {
     private final UserService userService;
 
     private static final List<String> PUBLIC_URLS = Arrays.asList(
-            "/v1/users/sign-in",
-            "/v1/users/sign-up",
-            "/v1/users", // для POST регистрации
             "/sign-in",
             "/sign-up",
             "/",
@@ -44,7 +41,8 @@ public class TokenFilter implements Filter {
         String method = request.getMethod();
 
 
-        String token = String.valueOf(session.getAttribute("token"));
+        Object tokenObj = session.getAttribute("token");
+        String token = tokenObj != null ? tokenObj.toString() : null;
 
         boolean tokenIsNull = token == null;
 
@@ -62,7 +60,7 @@ public class TokenFilter implements Filter {
             } else {
                 log.warn("Token is not valid {}", token);
                 response.setStatus(401);
-                response.sendRedirect(request.getContextPath() + "/sign-in");
+                response.sendRedirect("/sign-in");
             }
         } else {
             response.setStatus(401);
@@ -73,8 +71,7 @@ public class TokenFilter implements Filter {
     private boolean isPublicUrl(String path, String method) {
         return PUBLIC_URLS.stream().anyMatch(publicUrl ->
                 path.equals(publicUrl) ||
-                        path.startsWith(publicUrl) ||
-                        (path.equals("/v1/users") && method.equals("POST"))
+                        path.startsWith(publicUrl)
         );
     }
 }
