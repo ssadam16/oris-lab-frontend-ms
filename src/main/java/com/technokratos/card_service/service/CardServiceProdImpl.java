@@ -103,6 +103,11 @@ public class CardServiceProdImpl implements CardService {
         final String url = "%s/%s".formatted(cardServiceUrl, cardId);
         log.debug("Calling card service to close card: {}", url);
 
-        restTemplate.delete(url);
+        restTemplate.exchange(
+                url,
+                HttpMethod.DELETE,
+                null,
+                Void.class
+        );
     }
 }

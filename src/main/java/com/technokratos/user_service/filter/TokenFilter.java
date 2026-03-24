@@ -51,7 +51,6 @@ public class TokenFilter implements Filter {
             return;
         }
 
-
         if (!tokenIsNull) {
 
             UserDataTokenValidationResponse validationResponse = userService.validateToken(token);

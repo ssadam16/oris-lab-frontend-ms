@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
-@Profile("dev")
+@Profile("prod")
 @Slf4j
 public class TransferServiceDevImpl implements TransferService {
 

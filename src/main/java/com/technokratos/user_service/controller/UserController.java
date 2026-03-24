@@ -68,34 +68,24 @@ public class UserController {
 
     @GetMapping("/profile")
     public String profile(Model model, HttpSession session) {
-        Object userIdObj = session.getAttribute("userId");
+        UUID userId = (UUID) session.getAttribute("userId");
 
-        UUID userId = userIdObj != null ? UUID.fromString(userIdObj.toString()) : null;
+        UserDataUserResponse user = userService.findById(userId);
 
-        if (userId == null) {
-            return "redirect:/sign-in";
-        }
+        List<CardResponse> cards = cardService.getAllUserCards(userId);
 
-        try {
-            // Получаем данные пользователя
-            UserDataUserResponse user = userService.findById(userId);
+        log.info("User {} loaded with {} cards", user.id(), cards.size());
 
-            // Получаем все карты пользователя
-            List<CardResponse> cards = cardService.getAllUserCards(userId);
+        model.addAttribute("user", user);
+        model.addAttribute("cards", cards);
+        model.addAttribute("activePage", "profile");
 
-            log.info("User {} loaded with {} cards", user.id(), cards.size());
+        return "profile";
+    }
 
-            cards.forEach(card -> log.info("Card: {}", card.toString()));
-
-            model.addAttribute("user", user);
-            model.addAttribute("cards", cards);
-            model.addAttribute("activePage", "profile");
-
-            return "profile";
-        } catch (Exception e) {
-            log.error("Error loading profile for user: {}", userId, e);
-            model.addAttribute("error", "Ошибка загрузки профиля");
-            return "error/500";
-        }
+    @PostMapping("/logout")
+    public String logout(HttpSession session) {
+        session.invalidate();
+        return "index";
     }
 }

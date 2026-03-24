@@ -8,7 +8,7 @@
 
                 <a href="/" class="<#if page == 'home'>active</#if>">Главная</a>
 
-                <#if session?? && session.userId??>
+                <#if Session.token?? && Session.userId??>
                     <a href="/cards" class="<#if page == 'cards'>active</#if>">Мои карты</a>
                     <a href="/transfers" class="<#if page == 'transfers'>active</#if>">Переводы</a>
                     <a href="/profile" class="<#if page == 'profile'>active</#if>">Профиль</a>

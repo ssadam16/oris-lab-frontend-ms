@@ -6,12 +6,13 @@ public record CardResponse(
         UUID id,
         UUID userId,
         String plasticName,
-        String cardName,
         String contractName,
         String pan,
-        String imageLink,
         String expDate,
         String cvv,
-        CardProductResponse cardProduct
+        UUID openDocumentId,
+        UUID closeDocumentId,
+        CardProductResponse cardProduct,
+        boolean closeFlag
 ) {
 }
