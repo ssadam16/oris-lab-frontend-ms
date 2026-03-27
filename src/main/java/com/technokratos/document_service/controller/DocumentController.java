@@ -8,11 +8,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.UUID;
 
 @Controller
 @RequestMapping("/v1/documents")
@@ -46,6 +45,12 @@ public class DocumentController {
 
             return "redirect:/v1/documents";
         }
+    }
+
+    @GetMapping("/{id}")
+    public String getSpecificDocumentPage(@PathVariable UUID id, Model model) {
+        model.addAttribute("document", documentService.getById(id));
+        return "specific-document";
     }
 
 }

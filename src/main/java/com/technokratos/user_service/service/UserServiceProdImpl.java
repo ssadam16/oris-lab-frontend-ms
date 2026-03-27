@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@Profile("dev")//поменять на prod
+//@Profile("prod")//поменять на prod
 @RequiredArgsConstructor
 @Slf4j
 public class UserServiceProdImpl implements UserService {

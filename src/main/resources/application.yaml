@@ -8,3 +8,5 @@ spring:
       url: http://localhost:8083/api/v1/transfers
     document-service:
       url: http://185.221.160.131/api/documents
+    user-restriction-service:
+      url: http://localhost:8086/api/v1/restrictions

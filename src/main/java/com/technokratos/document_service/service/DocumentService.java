@@ -23,6 +23,8 @@ public class DocumentService {
     public DocumentResponse createDocument(DocumentCreatingRequest request) {
         request.setUserId(UUID.randomUUID());
 
+        log.info("Document for user with ID={} created", request.getUserId());
+
         return restTemplate.postForObject(
                 documentServiceUrl,
                 request,
@@ -30,4 +32,8 @@ public class DocumentService {
         );
     }
 
+    public DocumentResponse getById(UUID documentId) {
+        final String url = "%s/%s".formatted(documentServiceUrl, documentId);
+        return restTemplate.getForObject(url, DocumentResponse.class);
+    }
 }
