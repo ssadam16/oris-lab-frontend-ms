@@ -4,14 +4,18 @@
         <nav class="nav">
             <a href="/" class="logo">TechnoBank</a>
             <div class="nav-links">
-                <#assign page = activePage!'' />
 
-                <a href="/" class="<#if page == 'home'>active</#if>">Главная</a>
+                <#-- Безопасное получение activePage с дефолтным значением -->
+                <#assign currentPage = activePage!'' />
+
+                <a href="/" class="<#if currentPage == 'home'>active</#if>">Главная</a>
 
                 <#if Session.token?? && Session.userId??>
-                    <a href="/cards" class="<#if page == 'cards'>active</#if>">Мои карты</a>
-                    <a href="/transfers" class="<#if page == 'transfers'>active</#if>">Переводы</a>
-                    <a href="/profile" class="<#if page == 'profile'>active</#if>">Профиль</a>
+                    <a href="/cards" class="<#if currentPage == 'cards'>active</#if>">Мои карты</a>
+                    <a href="/transfers" class="<#if currentPage == 'transfers'>active</#if>">Переводы</a>
+                    <a href="/transfers/history" class="<#if currentPage == 'history'>active</#if>">История</a>
+                    <a href="/profile" class="<#if currentPage == 'profile'>active</#if>">Профиль</a>
+
                     <form action="/logout" method="post" style="display: inline;">
                         <button type="submit" class="btn btn-logout">Выйти</button>
                     </form>

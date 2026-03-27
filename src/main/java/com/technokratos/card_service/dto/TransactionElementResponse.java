@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 public record TransactionElementResponse(
-        UUID sourceContractId,
-        UUID targetContractId,
+        String sourceContractName,
+        String targetContractName,
         BigDecimal amount,
         String description
 ) {

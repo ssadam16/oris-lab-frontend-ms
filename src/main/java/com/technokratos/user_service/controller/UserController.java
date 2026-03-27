@@ -2,6 +2,9 @@ package com.technokratos.user_service.controller;
 
 import com.technokratos.card_service.dto.CardResponse;
 import com.technokratos.card_service.service.CardService;
+import com.technokratos.exception.AuthenticationException;
+import com.technokratos.exception.ServiceException;
+import com.technokratos.exception.UserNotFoundException;
 import com.technokratos.user_service.dto.UserDataLoginRequest;
 import com.technokratos.user_service.dto.UserDataTokenResponse;
 import com.technokratos.user_service.dto.UserDataUserRequest;
@@ -13,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,27 +41,35 @@ public class UserController {
     }
 
     @PostMapping("/sign-up")
-    public String signUp(@ModelAttribute UserDataUserRequest signUpRequest, Model model) {
+    public String signUp(
+            @ModelAttribute UserDataUserRequest signUpRequest,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
 
         UserDataUserResponse userResponse = userService.signUp(signUpRequest);
 
-        model.addAttribute("message", "Регистрация успешна!");
+        redirectAttributes.addAttribute("message", "Регистрация успешна!");
         model.addAttribute("userResponse", userResponse);
+
         return "redirect:/sign-in";
     }
 
     @PostMapping("/sign-in")
     public String signIn(
-            @ModelAttribute UserDataLoginRequest loginRequest,
-            HttpSession session
-    ) {
-
-        UserDataTokenResponse tokenResponse = userService.signIn(loginRequest);
-
-        session.setAttribute("token", tokenResponse.accessToken());
-        session.setAttribute("userId", tokenResponse.userId());
-
-        return "redirect:/profile";
+            @ModelAttribute(name = "loginRequest") UserDataLoginRequest loginRequest,
+            HttpSession session,
+            Model model) {
+        try {
+            UserDataTokenResponse tokenResponse = userService.signIn(loginRequest);
+            session.setAttribute("token", tokenResponse.accessToken());
+            session.setAttribute("userId", tokenResponse.userId());
+            return "redirect:/profile";
+        } catch (AuthenticationException | UserNotFoundException e) {
+            model.addAttribute("error", e.getMessage());
+            model.addAttribute("phone", loginRequest.phone()); // сохраняем телефон
+            return "sign-in";
+        }
     }
 
 
@@ -70,11 +83,13 @@ public class UserController {
     public String profile(Model model, HttpSession session) {
         UUID userId = (UUID) session.getAttribute("userId");
 
+        log.info("userId: {}", userId);
+
         UserDataUserResponse user = userService.findById(userId);
 
         List<CardResponse> cards = cardService.getAllUserCards(userId);
 
-        log.info("User {} loaded with {} cards", user.id(), cards.size());
+        log.debug("User {} loaded with {} cards", user.id(), cards.size());
 
         model.addAttribute("user", user);
         model.addAttribute("cards", cards);

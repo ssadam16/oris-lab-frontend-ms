@@ -1,11 +1,10 @@
 package com.technokratos.transfer_service.dto;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 public record TransactionRequest(
-        UUID sourceContractId,
-        UUID targetContractId,
+        String sourceContractName,
+        String targetContractName,
         BigDecimal amount,
         String description
 ) {

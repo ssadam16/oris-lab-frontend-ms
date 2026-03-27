@@ -51,7 +51,7 @@ public class CardController {
         } catch (Exception e) {
             log.error("Error loading open card page", e);
             model.addAttribute("error", "Ошибка загрузки продуктов");
-            return "error/500";
+            return "error";
         }
     }
 
@@ -61,17 +61,14 @@ public class CardController {
                            HttpSession session,
                            RedirectAttributes redirectAttributes) {
         UUID userId = (UUID) session.getAttribute("userId");
-        if (userId == null) {
-            return "redirect:/sign-in";
-        }
 
 
-            CardRequest request = new CardRequest(cardProductId, userId);
-            CardResponse card = cardService.openNewCardForUser(request);
+        CardRequest request = new CardRequest(cardProductId, userId);
+        CardResponse card = cardService.openNewCardForUser(request);
 
-            redirectAttributes.addFlashAttribute("success",
-                    "Карта \"" + card.plasticName() + "\" успешно открыта!");
-            return "redirect:/cards";
+        redirectAttributes.addFlashAttribute("success",
+                "Карта \"" + card.plasticName() + "\" успешно открыта!");
+        return "redirect:/cards";
     }
 
     // Страница деталей карты

@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-@Profile("prod")
+@Profile("dev")
 @Slf4j
 public class UserServiceDevImpl implements UserService {
 

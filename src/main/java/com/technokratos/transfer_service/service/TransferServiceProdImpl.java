@@ -13,7 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Service
-@Profile("dev")
+@Profile("prod")
 @RequiredArgsConstructor
 public class TransferServiceProdImpl implements TransferService {
 
@@ -27,8 +27,8 @@ public class TransferServiceProdImpl implements TransferService {
         final String url = "%s/transactions".formatted(transferServiceUrl);
 
         log.info("Making transaction to URL: {}", url);
-        log.debug("Transaction request: sourceContractId={}, targetContractId={}, amount={}, description={}",
-                request.sourceContractId(), request.targetContractId(), request.amount(), request.description());
+        log.debug("Transaction request: sourceContractId={}, targetContractName={}, amount={}, description={}",
+                request.sourceContractName(), request.targetContractName(), request.amount(), request.description());
 
         TransactionElementResponse response = restTemplate.postForObject(
                 url,
@@ -37,8 +37,8 @@ public class TransferServiceProdImpl implements TransferService {
         );
 
         log.info("Transaction completed successfully. Source: {}, Target: {}, Amount: {}",
-                response != null ? response.sourceContractId() : null,
-                response != null ? response.targetContractId() : null,
+                response != null ? response.sourceContractName() : null,
+                response != null ? response.targetContractName() : null,
                 response != null ? response.amount() : null);
 
         return response;

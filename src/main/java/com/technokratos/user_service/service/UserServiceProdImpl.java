@@ -1,21 +1,25 @@
 package com.technokratos.user_service.service;
 
+import com.technokratos.exception.AuthenticationException;
+import com.technokratos.exception.UserNotFoundException;
 import com.technokratos.user_service.dto.*;
-import com.technokratos.user_service.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
-//@Profile("prod")//поменять на prod
+@Profile("prod")
 @RequiredArgsConstructor
 @Slf4j
 public class UserServiceProdImpl implements UserService {
@@ -29,8 +33,11 @@ public class UserServiceProdImpl implements UserService {
     public UserDataUserResponse findById(UUID id) {
         final String url = "%s/%s".formatted(userServiceUrl, id);
         log.debug("Calling user service to find user by id: {}", id);
-
-        return restTemplate.getForObject(url, UserDataUserResponse.class);
+        try {
+            return restTemplate.getForObject(url, UserDataUserResponse.class);
+        } catch (RestClientException e) {
+            throw new UserNotFoundException(id);
+        }
     }
 
     @Override
@@ -41,7 +48,8 @@ public class UserServiceProdImpl implements UserService {
                 userServiceUrl,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<UserDataUserResponse>>() {}
+                new ParameterizedTypeReference<List<UserDataUserResponse>>() {
+                }
         ).getBody();
     }
 
@@ -66,7 +74,19 @@ public class UserServiceProdImpl implements UserService {
         final String url = "%s/login".formatted(userServiceUrl);
         log.debug("Calling user service to sign in user with phone: {}", loginRequest.phone());
 
-        return restTemplate.postForObject(url, loginRequest, UserDataTokenResponse.class);
+        try {
+            return restTemplate.postForObject(url, loginRequest, UserDataTokenResponse.class);
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new UserNotFoundException(loginRequest.phone());
+        } catch (HttpClientErrorException.BadRequest e) {
+            String responseBody = e.getResponseBodyAsString();
+            if (responseBody.contains("password")) {
+                throw new AuthenticationException("Неверный пароль", HttpStatus.valueOf(e.getStatusCode().value()));
+            }
+            throw new AuthenticationException("Некорректный формат запроса", HttpStatus.valueOf(e.getStatusCode().value()));
+        } catch (HttpClientErrorException e) {
+            throw new AuthenticationException("Ошибка авторизации", HttpStatus.valueOf(e.getStatusCode().value()));
+        }
     }
 
     @Override

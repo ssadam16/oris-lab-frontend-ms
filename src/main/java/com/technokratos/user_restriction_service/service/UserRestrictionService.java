@@ -13,7 +13,8 @@ import org.springframework.web.client.RestTemplate;
 public class UserRestrictionService {
 
     private final RestTemplate restTemplate;
-    @Value("${user-restriction-service.url}")
+
+    @Value("${spring.services.user-restriction-service.url}")
     private String userRestrictionServiceUrl;
 
     public UserRestrictionResponse getUserRestrictionInfo(String userId) {

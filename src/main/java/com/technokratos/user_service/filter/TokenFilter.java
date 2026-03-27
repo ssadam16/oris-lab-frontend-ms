@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -40,24 +41,26 @@ public class TokenFilter implements Filter {
         String path = request.getRequestURI();
         String method = request.getMethod();
 
+        log.info("User want to get {} resource, method {}", path, method);
 
-        Object tokenObj = session.getAttribute("token");
-        String token = tokenObj != null ? tokenObj.toString() : null;
 
-        boolean tokenIsNull = token == null;
+        UUID token = (UUID) session.getAttribute("token");
+
+        log.info("User access token: {}", token);
 
         if (isPublicUrl(path, method)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        if (!tokenIsNull) {
+        if (token != null) {
 
-            UserDataTokenValidationResponse validationResponse = userService.validateToken(token);
+            UserDataTokenValidationResponse validationResponse = userService.validateToken(token.toString());
             if (validationResponse.validToken()) {
+                log.debug("Token is valid: {}", token);
                 filterChain.doFilter(request, response);
             } else {
-                log.warn("Token is not valid {}", token);
+                log.warn("Token is not valid: {}", token);
                 response.setStatus(401);
                 response.sendRedirect("/sign-in");
             }

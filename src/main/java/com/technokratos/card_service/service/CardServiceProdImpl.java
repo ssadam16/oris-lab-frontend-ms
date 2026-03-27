@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-//@Profile("prod")
+@Profile("prod")
 @RequiredArgsConstructor
 @Slf4j
 public class CardServiceProdImpl implements CardService {

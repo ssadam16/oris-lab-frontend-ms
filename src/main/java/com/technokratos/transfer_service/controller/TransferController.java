@@ -4,6 +4,7 @@ import com.technokratos.card_service.dto.CardResponse;
 import com.technokratos.card_service.dto.TransactionElementResponse;
 import com.technokratos.card_service.dto.TransactionResponse;
 import com.technokratos.card_service.service.CardService;
+import com.technokratos.exception.ServiceException;
 import com.technokratos.transfer_service.dto.ContractResponse;
 import com.technokratos.transfer_service.dto.TransactionRequest;
 import com.technokratos.transfer_service.service.TransferService;
@@ -16,10 +17,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/transfers")
@@ -30,8 +31,138 @@ public class TransferController {
     private final TransferService transferService;
     private final CardService cardService;
 
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+
     @GetMapping
-    public String transfersPage(HttpSession session, Model model) {
+    public String transfersPage(HttpSession session, Model model, RedirectAttributes redirectAttributes) {
+        UUID userId = (UUID) session.getAttribute("userId");
+        if (userId == null) {
+            redirectAttributes.addFlashAttribute("error", "Необходимо войти в систему");
+            return "redirect:/sign-in";
+        }
+
+        try {
+            List<CardResponse> allCards = cardService.getAllUserCards(userId);
+            List<CardResponse> activeCards = allCards.stream()
+                    .filter(card -> !card.closeFlag())
+                    .collect(Collectors.toList());
+
+            model.addAttribute("cards", activeCards);
+            model.addAttribute("activePage", "transfers");
+            model.addAttribute("currentTime", LocalDateTime.now().format(DATE_FORMATTER));
+
+            return "transfers";
+        } catch (Exception e) {
+            log.error("Error loading transfers page", e);
+            model.addAttribute("error", "Ошибка загрузки страницы переводов");
+            return "error/error";
+        }
+    }
+
+    @PostMapping
+    public String makeTransfer(
+            @RequestParam(name = "sourceContractName") String sourceContractName,
+            @RequestParam(name = "recipientType") String recipientType,
+            @RequestParam(name = "recipientIdentifier") String recipientIdentifier,
+            @RequestParam(name = "amount") BigDecimal amount,
+            @RequestParam(name = "description", required = false) String description,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+
+        UUID userId = (UUID) session.getAttribute("userId");
+
+        // Валидация
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            redirectAttributes.addFlashAttribute("error", "Сумма должна быть больше 0");
+            return "redirect:/transfers";
+        }
+        if (amount.compareTo(new BigDecimal("1000000")) > 0) {
+            redirectAttributes.addFlashAttribute("error", "Максимальная сумма перевода — 1 000 000 ₽");
+            return "redirect:/transfers";
+        }
+        if (recipientIdentifier == null || recipientIdentifier.trim().isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Укажите получателя");
+            return "redirect:/transfers";
+        }
+
+        try {
+            // 1. Проверка источника
+            CardResponse sourceCard = cardService.getCardInfoByContractName(sourceContractName);
+            if (sourceCard == null || !sourceCard.userId().equals(userId) || sourceCard.closeFlag()) {
+                redirectAttributes.addFlashAttribute("error", "Карта отправителя недоступна");
+                return "redirect:/transfers";
+            }
+
+            ContractResponse sourceContract = transferService.getContractByName(sourceContractName);
+            if (sourceContract == null || sourceContract.balance().compareTo(amount) < 0) {
+                redirectAttributes.addFlashAttribute("error",
+                        String.format("Недостаточно средств. Доступно: %.2f ₽", sourceContract != null ? sourceContract.balance() : 0));
+                return "redirect:/transfers";
+            }
+
+            // 2. Поиск получателя
+            ContractResponse targetContract = findTargetContract(recipientType, recipientIdentifier);
+            if (targetContract == null) {
+                redirectAttributes.addFlashAttribute("error", "Получатель не найден");
+                return "redirect:/transfers";
+            }
+
+            if (sourceContract.contractName().equals(targetContract.contractName())) {
+                redirectAttributes.addFlashAttribute("error", "Нельзя переводить самому себе");
+                return "redirect:/transfers";
+            }
+
+            // 3. Выполнение перевода
+            TransactionRequest request = new TransactionRequest(
+                    sourceContract.contractName(),
+                    targetContract.contractName(),
+                    amount,
+                    description != null && !description.trim().isEmpty() ? description.trim() : "Перевод между своими картами"
+            );
+
+            transferService.makeTransaction(request);
+
+            redirectAttributes.addFlashAttribute("success",
+                    String.format("Перевод на сумму %.2f ₽ успешно выполнен", amount));
+
+        } catch (ServiceException e) {
+            log.error("Service error during transfer", e);
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error during transfer", e);
+            redirectAttributes.addFlashAttribute("error", "Ошибка при выполнении перевода. Попробуйте позже.");
+        }
+
+        return "redirect:/transfers";
+    }
+
+    /**
+     * Поиск контракта получателя по типу
+     */
+    private ContractResponse findTargetContract(String type, String identifier) {
+        try {
+            return switch (type) {
+                case "card" -> {
+                    CardResponse card = cardService.getCardInfoByPan(identifier.replaceAll("\\s+", "")); // чистим пробелы
+                    yield card != null ? transferService.getContractByName(card.contractName()) : null;
+                }
+                case "contract" -> transferService.getContractByName(identifier);
+                case "phone" -> {
+                    // TODO: Если есть UserService с поиском по телефону → добавить логику
+                    // Пока заглушка — можно вернуть null или реализовать позже
+                    log.warn("Phone transfer not fully implemented yet for identifier: {}", identifier);
+                    yield null;
+                }
+                default -> null;
+            };
+        } catch (Exception e) {
+            log.warn("Error finding target contract for type={} id={}", type, identifier, e);
+            return null;
+        }
+    }
+
+    @GetMapping("/history")
+    public String historyPage(HttpSession session, Model model) {
         UUID userId = (UUID) session.getAttribute("userId");
         if (userId == null) {
             return "redirect:/sign-in";
@@ -39,164 +170,60 @@ public class TransferController {
 
         try {
             List<CardResponse> cards = cardService.getAllUserCards(userId);
+            List<Map<String, Object>> allTransactions = new ArrayList<>();
+
+            for (CardResponse card : cards) {
+                try {
+                    TransactionResponse txResp = transferService.getAllTransactionsByContractName(card.contractName());
+                    if (txResp != null && txResp.transactionElementResponse() != null) {
+                        for (TransactionElementResponse tx : txResp.transactionElementResponse()) {
+                            allTransactions.add(formatTransaction(tx, card.contractName(), card.plasticName()));
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to load transactions for card {}", card.contractName(), e);
+                }
+            }
+
+            // Сортировка по дате (новые сверху) — если в TransactionElementResponse нет даты, используем текущую или добавь дату в бэк
+            allTransactions.sort((a, b) ->
+                    ((String) b.get("date")).compareTo((String) a.get("date")));
+
+            model.addAttribute("transactions", allTransactions);
             model.addAttribute("cards", cards);
-            model.addAttribute("activePage", "transfers");
-            return "transfers";
+            model.addAttribute("activePage", "history");
+            model.addAttribute("currentTime", LocalDateTime.now().format(DATE_FORMATTER));
+
+            return "transfers-history";
+
         } catch (Exception e) {
-            log.error("Error loading transfers page", e);
-            model.addAttribute("error", "Ошибка загрузки страницы переводов");
+            log.error("Error loading history", e);
+            model.addAttribute("error", "Ошибка загрузки истории операций");
             return "error/500";
         }
     }
 
-    @PostMapping
-    public String makeTransfer(@RequestParam String sourceContractId,
-                               @RequestParam String targetIdentifier,
-                               @RequestParam String recipientType,
-                               @RequestParam BigDecimal amount,
-                               @RequestParam(required = false) String description,
-                               HttpSession session,
-                               RedirectAttributes redirectAttributes) {
-        UUID userId = (UUID) session.getAttribute("userId");
-        if (userId == null) {
-            return "redirect:/sign-in";
+    private Map<String, Object> formatTransaction(TransactionElementResponse tx, String userContractName, String plasticName) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("amount", tx.amount());
+        map.put("description", tx.description() != null ? tx.description() : "Перевод");
+        map.put("date", LocalDateTime.now().format(DATE_FORMATTER)); // Замени на реальную дату, когда добавишь в DTO
+
+        boolean isOutgoing = tx.sourceContractName().contains(userContractName.substring(0, 8));
+
+        if (isOutgoing) {
+            map.put("type", "outgoing");
+            map.put("direction", "↗️ Исходящий");
+            map.put("color", "text-danger");
+            map.put("formattedAmount", String.format("- %.2f ₽", tx.amount()));
+            map.put("cardName", plasticName);
+        } else {
+            map.put("type", "incoming");
+            map.put("direction", "↙️ Входящий");
+            map.put("color", "text-success");
+            map.put("formattedAmount", String.format("+ %.2f ₽", tx.amount()));
+            map.put("cardName", plasticName);
         }
-
-        try {
-            // Получаем карту по имени контракта
-            CardResponse sourceCard = cardService.getCardInfoByContractName(sourceContractId);
-            if (!sourceCard.userId().equals(userId)) {
-                redirectAttributes.addFlashAttribute("error", "Доступ запрещен");
-                return "redirect:/transfers";
-            }
-
-            // Получаем контракт получателя
-            ContractResponse targetContract;
-            if ("card".equals(recipientType)) {
-                // По номеру карты
-                CardResponse targetCard = cardService.getCardInfoByPan(targetIdentifier);
-                targetContract = transferService.getContractByName(targetCard.contractName());
-            } else if ("phone".equals(recipientType)) {
-                // По номеру телефона - нужно получить пользователя и его контракт
-                // В моке просто ищем по контракту
-                targetContract = transferService.getContractByName(targetIdentifier);
-            } else {
-                // По номеру договора
-                targetContract = transferService.getContractByName(targetIdentifier);
-            }
-
-            if (targetContract == null) {
-                redirectAttributes.addFlashAttribute("error", "Получатель не найден");
-                return "redirect:/transfers";
-            }
-
-            // Получаем UUID контрактов (в моке используем имя контракта как ID)
-            UUID sourceContractUuid = UUID.nameUUIDFromBytes(sourceContractId.getBytes());
-            UUID targetContractUuid = UUID.nameUUIDFromBytes(targetContract.contractName().getBytes());
-
-            TransactionRequest request = new TransactionRequest(
-                    sourceContractUuid,
-                    targetContractUuid,
-                    amount,
-                    description != null ? description : "Перевод"
-            );
-
-            transferService.makeTransaction(request);
-            redirectAttributes.addFlashAttribute("success",
-                    String.format("Перевод %.2f ₽ успешно выполнен", amount));
-
-        } catch (Exception e) {
-            log.error("Error making transfer", e);
-            redirectAttributes.addFlashAttribute("error",
-                    "Ошибка перевода: " + e.getMessage());
-        }
-
-        return "redirect:/transfers";
-    }
-
-    @GetMapping("/api/contracts/{contractName}/balance")
-    @ResponseBody
-    public Map<String, Object> getBalance(@PathVariable String contractName, HttpSession session) {
-        UUID userId = (UUID) session.getAttribute("userId");
-        Map<String, Object> response = new HashMap<>();
-
-        try {
-            ContractResponse contract = transferService.getContractByName(contractName);
-
-            // Проверяем, что контракт принадлежит пользователю
-            CardResponse card = cardService.getCardInfoByContractName(contractName);
-            if (card == null || !card.userId().equals(userId)) {
-                response.put("error", "Access denied");
-                return response;
-            }
-
-            response.put("balance", contract.balance());
-            response.put("success", true);
-        } catch (Exception e) {
-            response.put("error", e.getMessage());
-            response.put("success", false);
-        }
-
-        return response;
-    }
-
-    @GetMapping("/api/transactions/history")
-    @ResponseBody
-    public List<Map<String, Object>> getTransactionHistory(HttpSession session,
-                                                           @RequestParam(defaultValue = "all") String filter,
-                                                           @RequestParam(required = false) String from,
-                                                           @RequestParam(required = false) String to) {
-        UUID userId = (UUID) session.getAttribute("userId");
-
-        try {
-            List<CardResponse> userCards = cardService.getAllUserCards(userId);
-            Map<String, List<TransactionElementResponse>> allTransactions = new HashMap<>();
-
-            for (CardResponse card : userCards) {
-                TransactionResponse txResponse = transferService.getAllTransactionsByContractName(card.contractName());
-                allTransactions.put(card.contractName(), txResponse.transactionElementResponse());
-            }
-
-            // Форматируем для фронта
-            return formatTransactionsForFrontend(allTransactions, filter);
-        } catch (Exception e) {
-            log.error("Error getting transaction history", e);
-            return List.of();
-        }
-    }
-
-    private List<Map<String, Object>> formatTransactionsForFrontend(Map<String, List<TransactionElementResponse>> transactions, String filter) {
-        List<Map<String, Object>> result = new java.util.ArrayList<>();
-
-        for (Map.Entry<String, List<TransactionElementResponse>> entry : transactions.entrySet()) {
-            String contractName = entry.getKey();
-            for (TransactionElementResponse tx : entry.getValue()) {
-                Map<String, Object> formatted = new HashMap<>();
-                formatted.put("date", java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")));
-                formatted.put("sourceName", tx.sourceContractId().toString().substring(0, 8));
-                formatted.put("targetName", tx.targetContractId().toString().substring(0, 8));
-                formatted.put("amount", tx.amount());
-                formatted.put("description", tx.description());
-                formatted.put("status", "Выполнен");
-
-                // Определяем тип операции
-                if (tx.sourceContractId().toString().contains(contractName.substring(0, 8))) {
-                    formatted.put("type", "outgoing");
-                } else {
-                    formatted.put("type", "incoming");
-                }
-
-                // Фильтруем
-                if ("outgoing".equals(filter) && !"outgoing".equals(formatted.get("type"))) continue;
-                if ("incoming".equals(filter) && !"incoming".equals(formatted.get("type"))) continue;
-
-                result.add(formatted);
-            }
-        }
-
-        // Сортируем по дате (последние сверху)
-        result.sort((a, b) -> b.get("date").toString().compareTo(a.get("date").toString()));
-
-        return result;
+        return map;
     }
 }

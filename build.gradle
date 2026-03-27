@@ -27,12 +27,15 @@ dependencies {
 
     implementation 'org.freemarker:freemarker:2.3.33'
     implementation 'org.springframework:spring-context-support:7.0.5'
-    implementation 'org.slf4j:slf4j-api:2.0.9'
-    implementation 'org.slf4j:slf4j-simple:2.0.9'
+    // Source: https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    implementation 'org.slf4j:slf4j-api:2.0.17'
+    // Source: https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
     implementation 'org.yaml:snakeyaml:2.0'
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
     implementation 'org.hibernate.validator:hibernate-validator:8.0.1.Final'
 
