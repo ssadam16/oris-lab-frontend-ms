@@ -22,7 +22,8 @@ public class CheckRestrictionsFilter extends OncePerRequestFilter {
     private final UserRestrictionService userRestrictionService;
 
     private final Map<Restriction, List<String>> endpointRestrictions = Map.of(
-            Restriction.PARTICULAR, List.of("/cards/open")
+            Restriction.PARTICULAR, List.of("/cards/open"),
+            Restriction.TOTAL, List.of("/cards/open", "/cards/{cardId}", "/transfer")
     );
 
     @Override
