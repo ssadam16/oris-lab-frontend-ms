@@ -1,6 +1,7 @@
 package com.technokratos.user_service.service;
 
 import com.technokratos.exception.AuthenticationException;
+import com.technokratos.exception.UserAlreadyExistsException;
 import com.technokratos.exception.UserNotFoundException;
 import com.technokratos.user_service.dto.*;
 import lombok.RequiredArgsConstructor;

@@ -12,6 +12,7 @@ import com.technokratos.transfer_service.service.TransferService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Controller
 @RequestMapping("/transfers")
@@ -35,12 +37,8 @@ public class TransferController {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
     @GetMapping
-    public String transfersPage(HttpSession session, Model model, RedirectAttributes redirectAttributes) {
+    public String transfersPage(HttpSession session, Model model) {
         UUID userId = (UUID) session.getAttribute("userId");
-        if (userId == null) {
-            redirectAttributes.addFlashAttribute("error", "Необходимо войти в систему");
-            return "redirect:/sign-in";
-        }
 
         try {
             List<CardResponse> allCards = cardService.getAllUserCards(userId);
@@ -101,7 +99,6 @@ public class TransferController {
                 return "redirect:/transfers";
             }
 
-            // 2. Поиск получателя
             ContractResponse targetContract = findTargetContract(recipientType, recipientIdentifier);
             if (targetContract == null) {
                 redirectAttributes.addFlashAttribute("error", "Получатель не найден");
@@ -118,7 +115,7 @@ public class TransferController {
                     sourceContract.contractName(),
                     targetContract.contractName(),
                     amount,
-                    description != null && !description.trim().isEmpty() ? description.trim() : "Перевод между своими картами"
+                    description.trim()
             );
 
             transferService.makeTransaction(request);
@@ -144,16 +141,10 @@ public class TransferController {
         try {
             return switch (type) {
                 case "card" -> {
-                    CardResponse card = cardService.getCardInfoByPan(identifier.replaceAll("\\s+", "")); // чистим пробелы
+                    CardResponse card = cardService.getCardInfoByPan(identifier.replaceAll("\\s+", ""));
                     yield card != null ? transferService.getContractByName(card.contractName()) : null;
                 }
                 case "contract" -> transferService.getContractByName(identifier);
-                case "phone" -> {
-                    // TODO: Если есть UserService с поиском по телефону → добавить логику
-                    // Пока заглушка — можно вернуть null или реализовать позже
-                    log.warn("Phone transfer not fully implemented yet for identifier: {}", identifier);
-                    yield null;
-                }
                 default -> null;
             };
         } catch (Exception e) {
@@ -168,69 +159,15 @@ public class TransferController {
 
         try {
             List<CardResponse> cards = cardService.getAllUserCards(userId);
-            List<TransactionItem> allTransactions = new ArrayList<>();
+
+            List<List<TransactionElementResponse>> transactions = new ArrayList<>();
 
             for (CardResponse card : cards) {
-                try {
-                    TransactionResponse txResp = transferService.getAllTransactionsByContractName(card.contractName());
-                    if (txResp != null && txResp.transactions() != null) {
-                        for (TransactionElementResponse tx : txResp.transactions()) {
-                            TransactionItem item = new TransactionItem();
-
-                            // Определяем тип операции относительно текущей карты
-                            boolean isOutgoing = card.id().toString().equals(tx.sourceContractId());
-
-                            item.setCardName(card.plasticName());
-                            item.setContractName(card.contractName());
-                            item.setAmount(tx.amount());
-                            item.setDescription(tx.description() != null && !tx.description().isEmpty()
-                                    ? tx.description() : "Перевод");
-
-                            if (isOutgoing) {
-                                item.setType("outgoing");
-                                item.setDirection("Исходящий");
-                                item.setFormattedAmount(String.format("- %.2f ₽", tx.amount()));
-                                item.setCounterparty(tx.targetContractId());
-                            } else {
-                                item.setType("incoming");
-                                item.setDirection("Входящий");
-                                item.setFormattedAmount(String.format("+ %.2f ₽", tx.amount()));
-                                item.setCounterparty(tx.sourceContractId());
-                            }
-
-                            // Используем реальные даты из TransactionResponse
-                            if (txResp.from() != null && txResp.to() != null) {
-                                // Если есть период, используем from как дату операции
-                                item.setDate(txResp.from().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")));
-                                item.setTime(txResp.from().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-                            } else {
-                                LocalDateTime now = LocalDateTime.now();
-                                item.setDate(now.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")));
-                                item.setTime(now.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-                            }
-
-                            allTransactions.add(item);
-                        }
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to load transactions for card {}", card.contractName(), e);
-                }
+                TransactionResponse transactionResponse = transferService.getAllTransactionsByContractName(card.contractName());
+                transactions.add(transactionResponse.transactions());
             }
 
-            // Сортировка по дате и времени (новые сверху)
-            allTransactions.sort((a, b) -> {
-                try {
-                    LocalDateTime dateA = LocalDateTime.parse(a.getDate() + " " + a.getTime(),
-                            DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
-                    LocalDateTime dateB = LocalDateTime.parse(b.getDate() + " " + b.getTime(),
-                            DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
-                    return dateB.compareTo(dateA);
-                } catch (Exception e) {
-                    return 0;
-                }
-            });
-
-            model.addAttribute("transactions", allTransactions);
+            model.addAttribute("transactions", transactions.stream().flatMap(Collection::stream).toList());
             model.addAttribute("cards", cards);
             model.addAttribute("activePage", "history");
             model.addAttribute("currentTime", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")));
@@ -242,29 +179,5 @@ public class TransferController {
             model.addAttribute("error", "Ошибка загрузки истории операций: " + e.getMessage());
             return "error/error";
         }
-    }
-
-    private Map<String, Object> formatTransaction(TransactionElementResponse tx, String userContractName, String plasticName) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("amount", tx.amount());
-        map.put("description", tx.description() != null ? tx.description() : "Перевод");
-        map.put("date", LocalDateTime.now().format(DATE_FORMATTER)); // Замени на реальную дату, когда добавишь в DTO
-
-        boolean isOutgoing = tx.sourceContractId().contains(userContractName.substring(0, 8));
-
-        if (isOutgoing) {
-            map.put("type", "outgoing");
-            map.put("direction", "↗️ Исходящий");
-            map.put("color", "text-danger");
-            map.put("formattedAmount", String.format("- %.2f ₽", tx.amount()));
-            map.put("cardName", plasticName);
-        } else {
-            map.put("type", "incoming");
-            map.put("direction", "↙️ Входящий");
-            map.put("color", "text-success");
-            map.put("formattedAmount", String.format("+ %.2f ₽", tx.amount()));
-            map.put("cardName", plasticName);
-        }
-        return map;
     }
 }

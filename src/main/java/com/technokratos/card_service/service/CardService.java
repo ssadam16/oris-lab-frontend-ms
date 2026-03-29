@@ -4,6 +4,8 @@ import com.technokratos.card_service.dto.CardProductResponse;
 import com.technokratos.card_service.dto.CardRequest;
 import com.technokratos.card_service.dto.CardResponse;
 import com.technokratos.card_service.dto.TransactionResponse;
+import com.technokratos.transfer_service.dto.TransactionItem;
+import org.jspecify.annotations.NonNull;
 
 import java.time.LocalDateTime;
 import java.util.List;

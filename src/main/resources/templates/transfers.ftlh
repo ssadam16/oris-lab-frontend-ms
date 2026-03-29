@@ -130,7 +130,6 @@
                     <div class="recipient-type">
                         <label class="type-btn active" data-type="card"><input type="radio" name="recipientType" value="card" checked style="display:none;"> По номеру карты</label>
                         <label class="type-btn" data-type="contract"><input type="radio" name="recipientType" value="contract" style="display:none;"> По договору</label>
-                        <label class="type-btn" data-type="phone"><input type="radio" name="recipientType" value="phone" style="display:none;"> По телефону</label>
                     </div>
                 </div>
 

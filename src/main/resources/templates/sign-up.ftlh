@@ -73,6 +73,17 @@
 <body>
 <#include "fragments/header.ftlh">
 
+<#if success??>
+    <div class="alert alert-success" style="margin-bottom:24px;">
+        <i class="fas fa-check-circle"></i> ${success}
+    </div>
+</#if>
+<#if error??>
+    <div class="alert alert-danger" style="margin-bottom:24px;">
+        <i class="fas fa-exclamation-triangle"></i> ${error}
+    </div>
+</#if>
+
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-header">

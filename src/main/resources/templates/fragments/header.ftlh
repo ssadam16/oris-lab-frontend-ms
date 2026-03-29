@@ -21,9 +21,6 @@
                     <a href="/transfers/history" class="<#if currentPage == 'history'>active</#if>">
                         <i class="fas fa-history"></i> История
                     </a>
-                    <a href="/documents" class="<#if currentPage == 'documents'>active</#if>">
-                        <i class="fas fa-file-alt"></i> Документы
-                    </a>
                     <a href="/profile" class="<#if currentPage == 'profile'>active</#if>">
                         <i class="fas fa-user"></i> Профиль
                     </a>

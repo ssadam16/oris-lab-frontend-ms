@@ -4,10 +4,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record DocumentResponse(
-        UUID documentId,
+        UUID id,
         DocumentCreatingRequest.DocumentType docType,
         UUID userId,
-        Instant createdAt,
+        Instant createdDate,
         String userFio,
         String cardNumber
 ) {

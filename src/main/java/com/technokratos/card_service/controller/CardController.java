@@ -4,6 +4,7 @@ import com.technokratos.card_service.dto.CardProductResponse;
 import com.technokratos.card_service.dto.CardRequest;
 import com.technokratos.card_service.dto.CardResponse;
 import com.technokratos.card_service.service.CardService;
+import com.technokratos.transfer_service.service.TransferService;
 import com.technokratos.user_service.service.UserService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,16 +27,34 @@ public class CardController {
 
     private final CardService cardService;
     private final UserService userService;
+    private final TransferService transferService;
 
     @GetMapping
     public String cardsPage(HttpSession session, Model model) {
         UUID userId = (UUID) session.getAttribute("userId");
         List<CardResponse> cards = cardService.getAllUserCards(userId);
-        List<CardProductResponse> products = cardService.getAllCardProducts();
+        List<CardResponse> cardsWithBalance = new ArrayList<>();
 
-        model.addAttribute("cards", cards);
-        model.addAttribute("products", products);
-        model.addAttribute("user", userService.findById(userId));
+        for (CardResponse card : cards) {
+            BigDecimal balance = transferService.getContractByName(card.contractName()).balance();
+            CardResponse updatedCard = new CardResponse(
+                    card.id(),
+                    card.userId(),
+                    card.plasticName(),
+                    card.contractName(),
+                    card.pan(),
+                    card.expDate(),
+                    card.cvv(),
+                    balance,
+                    card.openDocumentId(),
+                    card.closeDocumentId(),
+                    card.cardProduct(),
+                    card.closeFlag()
+            );
+            cardsWithBalance.add(updatedCard);
+        }
+
+        model.addAttribute("cards", cardsWithBalance);
         model.addAttribute("activePage", "cards");
 
         return "cards";

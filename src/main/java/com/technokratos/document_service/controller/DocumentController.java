@@ -2,6 +2,8 @@ package com.technokratos.document_service.controller;
 
 import com.technokratos.card_service.dto.CardResponse;
 import com.technokratos.card_service.service.CardService;
+import com.technokratos.document_service.dto.DocumentResponse;
+import com.technokratos.document_service.service.DocumentService;
 import com.technokratos.transfer_service.dto.ContractResponse;
 import com.technokratos.transfer_service.service.TransferService;
 import com.technokratos.user_service.service.UserService;
@@ -14,7 +16,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -25,12 +30,7 @@ public class DocumentController {
 
     private final CardService cardService;
     private final TransferService transferService;
-
-    @GetMapping
-    public String documentsPage(Model model) {
-        model.addAttribute("activePage", "documents");
-        return "documents";
-    }
+    private final DocumentService documentService;
 
     // Документ об открытии карты
     @GetMapping("/card-opening/{cardId}")
@@ -48,14 +48,19 @@ public class DocumentController {
                 return "redirect:/cards";
             }
 
+            DocumentResponse document = documentService.getById(card.openDocumentId());
+
+            log.info(document.toString());
+
             model.addAttribute("card", card);
+            model.addAttribute("document", document);
 
             return "document-card-opening";
 
         } catch (Exception e) {
             log.error("Error generating card opening document for cardId: {}", cardId, e);
             redirectAttributes.addFlashAttribute("error", "Не удалось сформировать документ об открытии карты");
-            return "redirect:/cards/" + cardId;
+            return "redirect:/cards/%s".formatted(cardId);
         }
     }
 
@@ -66,39 +71,27 @@ public class DocumentController {
                                       RedirectAttributes redirectAttributes) {
         UUID userId = (UUID) session.getAttribute("userId");
 
-        if (userId == null) {
-            redirectAttributes.addFlashAttribute("error", "Необходимо войти в систему");
-            return "redirect:/sign-in";
-        }
-
         try {
             CardResponse card = cardService.getCardInfoByCardId(cardId);
 
-            // Проверяем, что карта принадлежит пользователю
             if (!card.userId().equals(userId)) {
                 redirectAttributes.addFlashAttribute("error", "Доступ запрещён");
                 return "redirect:/cards";
             }
 
-            // Проверяем, что карта действительно закрыта
             if (!card.closeFlag()) {
                 redirectAttributes.addFlashAttribute("error", "Документ о закрытии доступен только для закрытых карт");
                 return "redirect:/cards";
             }
 
-            // Добавляем дополнительные данные для документа
             model.addAttribute("card", card);
 
-            // Рассчитываем срок использования карты
-            if (card.openDocumentId() != null) {
-                // Если есть дата открытия, можно добавить логику расчета
-                // Например, получить дату открытия из другого сервиса
-                model.addAttribute("usagePeriod", "Более 30 дней"); // Временное значение
-            } else {
-                model.addAttribute("usagePeriod", "Неизвестно");
-            }
+            DocumentResponse documentClosing = documentService.getById(card.closeDocumentId());
+            DocumentResponse documentOpening = documentService.getById(card.openDocumentId());
 
-            // Остаток на момент закрытия - можно получить из transferService
+            model.addAttribute("usagePeriod", Duration.between(documentOpening.createdDate(), Instant.now()).toDays());
+
+
             try {
                 ContractResponse contract = transferService.getContractByName(card.contractName());
                 BigDecimal closingBalance = contract != null ? contract.balance() : BigDecimal.ZERO;
@@ -110,6 +103,8 @@ public class DocumentController {
 
             model.addAttribute("currentDate", LocalDateTime.now());
             model.addAttribute("activePage", "cards");
+            model.addAttribute("document", documentClosing);
+            model.addAttribute("openingDate", documentOpening.createdDate());
 
             return "document-card-closing";
 
@@ -119,22 +114,4 @@ public class DocumentController {
             return "redirect:/cards";
         }
     }
-
-    // Чек по переводу (пока заглушка, можно расширить позже)
-    @GetMapping("/transfer")
-    public String transferDocument(
-            @RequestParam(required = false, name = "amount") String amount,
-            @RequestParam(required = false, name = "source") String source,
-            @RequestParam(required = false, name = "target") String target,
-            @RequestParam(required = false, name = "description") String description,
-            Model model) {
-
-        model.addAttribute("amount", amount != null ? amount : "0.00");
-        model.addAttribute("sourceCardName", source != null ? source : "Ваша карта");
-        model.addAttribute("targetContractName", target != null ? target : "Карта получателя");
-        model.addAttribute("description", description != null ? description : "Без комментария");
-
-        return "document-transfer";
-    }
-
 }

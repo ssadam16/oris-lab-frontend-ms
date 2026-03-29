@@ -151,6 +151,10 @@
                             <div class="value" style="font-family: monospace;">${card.contractName()!"—"}</div>
                         </div>
                         <div class="info-card">
+                            <div class="label">CVV</div>
+                            <div class="value" style="font-family: monospace;">${card.cvv()!"—"}</div>
+                        </div>
+                        <div class="info-card">
                             <div class="label">Статус</div>
                             <div class="value">
                                 <#if card.closeFlag()>

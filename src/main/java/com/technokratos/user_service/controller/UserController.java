@@ -4,6 +4,7 @@ import com.technokratos.card_service.dto.CardResponse;
 import com.technokratos.card_service.service.CardService;
 import com.technokratos.exception.AuthenticationException;
 import com.technokratos.exception.ServiceException;
+import com.technokratos.exception.UserAlreadyExistsException;
 import com.technokratos.exception.UserNotFoundException;
 import com.technokratos.user_service.dto.UserDataLoginRequest;
 import com.technokratos.user_service.dto.UserDataTokenResponse;
@@ -46,10 +47,14 @@ public class UserController {
             Model model,
             RedirectAttributes redirectAttributes
     ) {
+        UserDataUserResponse userResponse = null;
+        try {
+            userResponse = userService.signUp(signUpRequest);
+        } catch (HttpClientErrorException.Conflict e) {
+            model.addAttribute("error", "User with phone %s already exists".formatted(signUpRequest.phone()));
+        }
 
-        UserDataUserResponse userResponse = userService.signUp(signUpRequest);
-
-        redirectAttributes.addAttribute("message", "Регистрация успешна!");
+        redirectAttributes.addAttribute("success", "Регистрация успешна!");
         model.addAttribute("userResponse", userResponse);
 
         return "redirect:/sign-in";
