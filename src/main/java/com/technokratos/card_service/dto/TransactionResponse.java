@@ -7,6 +7,6 @@ public record TransactionResponse(
         String contractName,
         LocalDateTime from,
         LocalDateTime to,
-        List<TransactionElementResponse> transactionElementResponse
+        List<TransactionElementResponse> transactions
 ) {
 }

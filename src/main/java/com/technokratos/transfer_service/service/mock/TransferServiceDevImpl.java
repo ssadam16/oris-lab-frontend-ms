@@ -90,21 +90,21 @@
 //    @Override
 //    public TransactionElementResponse makeTransaction(TransactionRequest request) {
 //        String sourcedContractId = request.sourceContractId();
-//        String targetContractName = request.targetContractName();
+//        String targetContractId = request.targetContractId();
 //        log.info("MOCK: Making transaction from {} to {} amount: {}",
-//                sourcedContractId, targetContractName, request.amount());
+//                sourcedContractId, targetContractId, request.amount());
 //
 //        // Проверяем, что контракты существуют
 //
 //
 //        ContractResponse sourceContract = contractDatabase.get(sourcedContractId);
-//        ContractResponse targetContract = contractDatabase.get(targetContractName);
+//        ContractResponse targetContract = contractDatabase.get(targetContractId);
 //
 //        if (sourceContract == null) {
-//            throw new RuntimeException("Source contract not found: " + targetContractName);
+//            throw new RuntimeException("Source contract not found: " + targetContractId);
 //        }
 //        if (targetContract == null) {
-//            throw new RuntimeException("Target contract not found: " + targetContractName);
+//            throw new RuntimeException("Target contract not found: " + targetContractId);
 //        }
 //
 //        // Проверяем достаточно ли средств
@@ -126,20 +126,20 @@
 //                targetContract.balance().add(request.amount())
 //        );
 //
-//        contractDatabase.put(sourceContractName, updatedSource);
-//        contractDatabase.put(targetContractName, updatedTarget);
+//        contractDatabase.put(sourceContractId, updatedSource);
+//        contractDatabase.put(targetContractId, updatedTarget);
 //
 //        // Создаем транзакцию
 //        TransactionElementResponse transaction = new TransactionElementResponse(
 //                sourcedContractId,
-//                targetContractName,
+//                targetContractId,
 //                request.amount(),
 //                request.description()
 //        );
 //
 //        // Сохраняем транзакцию для обоих контрактов
-//        transactionDatabase.computeIfAbsent(sourceContractName, k -> new ArrayList<>()).add(transaction);
-//        transactionDatabase.computeIfAbsent(targetContractName, k -> new ArrayList<>()).add(transaction);
+//        transactionDatabase.computeIfAbsent(sourceContractId, k -> new ArrayList<>()).add(transaction);
+//        transactionDatabase.computeIfAbsent(targetContractId, k -> new ArrayList<>()).add(transaction);
 //
 //        log.info("MOCK: Transaction completed successfully");
 //        return transaction;

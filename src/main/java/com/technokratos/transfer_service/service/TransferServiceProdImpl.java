@@ -27,7 +27,7 @@ public class TransferServiceProdImpl implements TransferService {
         final String url = "%s/transactions".formatted(transferServiceUrl);
 
         log.info("Making transaction to URL: {}", url);
-        log.debug("Transaction request: sourceContractId={}, targetContractName={}, amount={}, description={}",
+        log.debug("Transaction request: sourceContractId={}, targetContractId={}, amount={}, description={}",
                 request.sourceContractName(), request.targetContractName(), request.amount(), request.description());
 
         TransactionElementResponse response = restTemplate.postForObject(
@@ -37,8 +37,8 @@ public class TransferServiceProdImpl implements TransferService {
         );
 
         log.info("Transaction completed successfully. Source: {}, Target: {}, Amount: {}",
-                response != null ? response.sourceContractName() : null,
-                response != null ? response.targetContractName() : null,
+                response != null ? response.sourceContractId() : null,
+                response != null ? response.targetContractId() : null,
                 response != null ? response.amount() : null);
 
         return response;
@@ -76,8 +76,10 @@ public class TransferServiceProdImpl implements TransferService {
                 TransactionResponse.class
         );
 
-        int transactionsCount = response != null && response.transactionElementResponse() != null
-                ? response.transactionElementResponse().size() : 0;
+        log.info("Transaction response {}", response);
+
+        int transactionsCount = response != null && response.transactions() != null
+                ? response.transactions().size() : 0;
 
         log.info("Retrieved {} transactions for contract: {} from {} to {}",
                 transactionsCount,

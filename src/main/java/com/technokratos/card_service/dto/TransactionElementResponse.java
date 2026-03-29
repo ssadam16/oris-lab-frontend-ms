@@ -1,12 +1,13 @@
 package com.technokratos.card_service.dto;
 
 import java.math.BigDecimal;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 public record TransactionElementResponse(
-        String sourceContractName,
-        String targetContractName,
+        String sourceContractId,
+        String targetContractId,
         BigDecimal amount,
-        String description
+        String description,
+        LocalDateTime createdAt
 ) {
 }
