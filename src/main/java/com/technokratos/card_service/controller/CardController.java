@@ -3,6 +3,7 @@ package com.technokratos.card_service.controller;
 import com.technokratos.card_service.dto.CardProductResponse;
 import com.technokratos.card_service.dto.CardRequest;
 import com.technokratos.card_service.dto.CardResponse;
+import com.technokratos.card_service.dto.TransactionResponse;
 import com.technokratos.card_service.service.CardService;
 import com.technokratos.transfer_service.service.TransferService;
 import com.technokratos.user_service.service.UserService;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -138,23 +140,31 @@ public class CardController {
     }
 
 
-//    // Получение выписки за период (AJAX)
-//    @GetMapping("/{cardId}/statement")
-//    @ResponseBody
-//    public TransactionResponse getStatement(@PathVariable UUID cardId,
-//                                            @RequestParam(name = "from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-//                                            @RequestParam(name = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
-//                                            HttpSession session) {
-//        UUID userId = (UUID) session.getAttribute("userId");
-//        if (userId == null) {
-//            throw new RuntimeException("Unauthorized");
-//        }
-//
-//        CardResponse card = cardService.getCardInfoByCardId(cardId);
-//        if (!card.userId().equals(userId)) {
-//            throw new RuntimeException("Access denied");
-//        }
-//
-//        return cardService.getCardStatementForPeriod(cardId, from, to);
-//    }
+    @GetMapping("/statement")
+    @ResponseBody
+    public String getStatement(
+            @RequestParam(name = "cardId") UUID cardId,
+            @RequestParam(name = "from") LocalDateTime from,
+            @RequestParam(name = "to") LocalDateTime to,
+            HttpSession session,
+            RedirectAttributes redirectAttributes,
+            Model model
+    ) {
+        UUID userId = (UUID) session.getAttribute("userId");
+
+        CardResponse card = cardService.getCardInfoByCardId(cardId);
+
+        if (!card.userId().equals(userId)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен");
+            return "redirect:/cards";
+        }
+        TransactionResponse statement = cardService.getCardStatementForPeriod(cardId, from, to);
+
+        model.addAttribute("cardStatement", statement);
+        model.addAttribute("cardId", cardId);
+        model.addAttribute("from", from);
+        model.addAttribute("to", to);
+
+        return "card-statement";
+    }
 }

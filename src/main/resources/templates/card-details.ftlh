@@ -168,6 +168,21 @@
                             <div class="label">Владелец</div>
                             <div class="value">${card.plasticName()!"—"}</div>
                         </div>
+                        <form method="get" action="/cards/statement">
+                            <input type="hidden" name="cardId" value="${card.id()}">
+
+                            <div>
+                                <label for="from">От</label>
+                                <input type="datetime-local" id="from" name="from" required>
+                            </div>
+
+                            <div>
+                                <label for="to">До</label>
+                                <input type="datetime-local" id="to" name="to" required>
+                            </div>
+
+                            <button type="submit">Посмотреть выписку</button>
+                        </form>
                     </div>
                 </div>
 
@@ -195,12 +210,12 @@
                                 🔒 Закрыть карту
                             </button>
                         </form>
-                        <#else>
-                            <a href="/documents/card-closing/${card.id()}"
-                               class="btn btn-primary btn-big"
-                               target="_blank">
-                                <i class="fas fa-file-alt"></i> Документ о закрытии
-                            </a>
+                    <#else>
+                        <a href="/documents/card-closing/${card.id()}"
+                           class="btn btn-primary btn-big"
+                           target="_blank">
+                            <i class="fas fa-file-alt"></i> Документ о закрытии
+                        </a>
 
                     </#if>
                 </div>
