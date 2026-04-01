@@ -114,33 +114,10 @@
             font-size: 16px;
         }
 
-        .change-period-btn {
-            background: white;
-            border: 2px solid #667eea;
-            color: #667eea;
-            padding: 8px 20px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .change-period-btn:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102,126,234,0.4);
-        }
-
         /* Summary Cards */
         .summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            display: flex;
+            justify-content: center;
             padding: 30px 40px;
             background: white;
             border-bottom: 1px solid #e9ecef;
@@ -148,10 +125,11 @@
 
         .summary-card {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 20px;
+            padding: 20px 40px;
             border-radius: 16px;
             text-align: center;
             transition: transform 0.3s, box-shadow 0.3s;
+            min-width: 280px;
         }
 
         .summary-card:hover {
@@ -171,18 +149,6 @@
             font-size: 32px;
             font-weight: bold;
             color: #212529;
-        }
-
-        .summary-card.income .value {
-            color: #22c55e;
-        }
-
-        .summary-card.expense .value {
-            color: #ef4444;
-        }
-
-        .summary-card.total .value {
-            color: #667eea;
         }
 
         /* Table */
@@ -228,32 +194,10 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
-        .amount-positive {
-            color: #22c55e;
+        .amount {
             font-weight: 700;
             font-size: 16px;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .amount-positive::before {
-            content: "↑";
-            font-size: 14px;
-        }
-
-        .amount-negative {
-            color: #ef4444;
-            font-weight: 700;
-            font-size: 16px;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .amount-negative::before {
-            content: "↓";
-            font-size: 14px;
+            color: #212529;
         }
 
         .transaction-date {
@@ -341,8 +285,10 @@
                 padding-right: 20px;
             }
 
-            .summary {
-                grid-template-columns: 1fr;
+            .summary-card {
+                padding: 20px;
+                min-width: auto;
+                width: 100%;
             }
 
             th, td {
@@ -404,20 +350,23 @@
         </div>
     </div>
 
-    <#if transactions?has_content>
-        <!-- Summary Cards -->
+    <#if cardStatement?? && cardStatement.transactions()?? && cardStatement.transactions()?size gt 0>
+    <#-- Calculate total turnover (sum of absolute values) -->
+        <#assign totalTurnover = 0>
+        <#list cardStatement.transactions() as transaction>
+            <#assign cleanAmount = transaction.amount()>
+            <#if cleanAmount lt 0>
+                <#assign totalTurnover = totalTurnover + (cleanAmount * -1)>
+            <#else>
+                <#assign totalTurnover = totalTurnover + cleanAmount>
+            </#if>
+        </#list>
+
+        <!-- Summary Cards (only total turnover) -->
         <div class="summary">
-            <div class="summary-card income">
-                <div class="label">💰 Доходы</div>
-                <div class="value">+${totalIncome?string('0.00')} ₽</div>
-            </div>
-            <div class="summary-card expense">
-                <div class="label">💸 Расходы</div>
-                <div class="value">-${totalExpense?string('0.00')} ₽</div>
-            </div>
-            <div class="summary-card total">
-                <div class="label">📊 Итого</div>
-                <div class="value">${total?string('0.00')} ₽</div>
+            <div class="summary-card">
+                <div class="label">💰 Оборот за период</div>
+                <div class="value">${totalTurnover?string('0.00')} ₽</div>
             </div>
         </div>
 
@@ -433,23 +382,23 @@
                 </tr>
                 </thead>
                 <tbody>
-                <#list transactions as tx>
+                <#list cardStatement.transactions() as transaction>
                     <tr>
                         <td class="transaction-date">
-                            ${tx.dateTime()}
+                            ${transaction.createdAt()}
                         </td>
                         <td>
-                            <span class="contract-badge">${tx.counterpartyName()}</span>
-                        </td>
-                        <td>
-                            <#if tx.amount() gt 0>
-                                <span class="amount-positive">+${tx.amount()?string('0.00')} ₽</span>
+                            <#if transaction.targetContractId()??>
+                                <span class="contract-badge">${transaction.targetContractId()}</span>
                             <#else>
-                                <span class="amount-negative">${tx.amount()?string('0.00')} ₽</span>
+                                <span style="color: #adb5bd;">—</span>
                             </#if>
                         </td>
+                        <td>
+                            <span class="amount">${transaction.amount()} ₽</span>
+                        </td>
                         <td class="description">
-                            ${tx.description()!"—"}
+                            ${transaction.description()!"—"}
                         </td>
                     </tr>
                 </#list>
@@ -462,6 +411,9 @@
             <div class="icon">📭</div>
             <h3>Нет операций за выбранный период</h3>
             <p>За период с ${from} по ${to} не было совершено ни одной операции</p>
+            <a href="/cards" class="back-btn" style="display: inline-flex; margin-top: 20px;">
+                🔄 Вернуться к картам
+            </a>
         </div>
     </#if>
 
