@@ -10,10 +10,6 @@ repositories {
     mavenCentral()
 }
 
-war {
-    archiveFileName = 'ROOT.war'
-}
-
 ext {
     jacksonVersion = '2.16.1'
 }
@@ -27,7 +23,6 @@ dependencies {
 
     implementation 'org.freemarker:freemarker:2.3.33'
     implementation 'org.springframework:spring-context-support:7.0.5'
-    // Source: https://mvnrepository.com/artifact/org.slf4j/slf4j-api
     implementation 'org.slf4j:slf4j-api:2.0.17'
 
     implementation 'ch.qos.logback:logback-classic:1.4.14'
