@@ -13,7 +13,6 @@ import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Service
-@Profile("prod")
 @RequiredArgsConstructor
 public class TransferServiceProdImpl implements TransferService {
 
