@@ -10,13 +10,16 @@ import com.technokratos.user_service.service.UserService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -65,17 +68,10 @@ public class CardController {
     // Страница открытия новой карты
     @GetMapping("/open")
     public String openCardPage(Model model) {
-
-        try {
-            List<CardProductResponse> products = cardService.getAllCardProducts();
-            model.addAttribute("products", products);
-            model.addAttribute("activePage", "cards");
-            return "open-card";
-        } catch (Exception e) {
-            log.error("Error loading open card page", e);
-            model.addAttribute("error", "Ошибка загрузки продуктов");
-            return "error";
-        }
+        List<CardProductResponse> products = cardService.getAllCardProducts();
+        model.addAttribute("products", products);
+        model.addAttribute("activePage", "cards");
+        return "open-card";
     }
 
     // Открытие новой карты
@@ -141,27 +137,23 @@ public class CardController {
 
 
     @GetMapping("/statement")
-    @ResponseBody
     public String getStatement(
-            @RequestParam(name = "cardId") UUID cardId,
-            @RequestParam(name = "from") LocalDateTime from,
-            @RequestParam(name = "to") LocalDateTime to,
-            HttpSession session,
-            RedirectAttributes redirectAttributes,
+            @RequestParam(name = "contractName") String contractName,
+            @RequestParam(name = "from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(name = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
             Model model
     ) {
-        UUID userId = (UUID) session.getAttribute("userId");
 
-        CardResponse card = cardService.getCardInfoByCardId(cardId);
+        ZoneId zoneId = ZoneId.systemDefault();
+        Instant fromInstant = from.atZone(zoneId).toInstant();
+        Instant toInstant = to.atZone(zoneId).toInstant();
 
-        if (!card.userId().equals(userId)) {
-            redirectAttributes.addFlashAttribute("error", "Доступ запрещен");
-            return "redirect:/cards";
-        }
-        TransactionResponse statement = cardService.getCardStatementForPeriod(cardId, from, to);
+        TransactionResponse statement = cardService.getCardStatementForPeriod(contractName, fromInstant, toInstant);
+
+        log.info(statement.contractName());
 
         model.addAttribute("cardStatement", statement);
-        model.addAttribute("cardId", cardId);
+        model.addAttribute("contractName", contractName);
         model.addAttribute("from", from);
         model.addAttribute("to", to);
 

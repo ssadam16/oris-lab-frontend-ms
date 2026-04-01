@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -19,6 +21,11 @@ public class UserRestrictionService {
 
     public UserRestrictionResponse getUserRestrictionInfo(String userId) {
         final String url = "%s/%s".formatted(userRestrictionServiceUrl, userId);
-        return restTemplate.getForObject(url, UserRestrictionResponse.class);
+        try {
+            return restTemplate.getForObject(url, UserRestrictionResponse.class);
+        } catch (HttpClientErrorException.NotFound e) {
+            log.info("User: {} not blocked", userId);
+            return null;
+        }
     }
 }

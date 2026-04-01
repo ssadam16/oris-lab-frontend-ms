@@ -1,10 +1,14 @@
 package com.technokratos.exception.handler;
 
 import com.technokratos.exception.ServiceException;
+import com.technokratos.user_restriction_service.filter.ForbiddenActionException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
@@ -18,7 +22,6 @@ import java.util.Date;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    // 404 Not Found
     @ExceptionHandler(ServiceException.class)
     public String handleServiceException(ServiceException e, Model model) {
         log.error("Service exception: {}", e.getMessage());
@@ -30,6 +33,16 @@ public class GlobalExceptionHandler {
         return "error/error";
     }
 
+    @ExceptionHandler(ForbiddenActionException.class)
+    public String handleForbiddenActionException(ForbiddenActionException e, Model model) {
+        log.error("Forbidden action: {}", e.getMessage());
+
+        model.addAttribute("errorCode", 403);
+        model.addAttribute("errorMessage", e.getMessage());
+        model.addAttribute("exceptionName", e.getClass().getSimpleName());
+
+        return "error/403";
+    }
 
     @ExceptionHandler(Exception.class)
     public String handleException(Exception e, Model model) {

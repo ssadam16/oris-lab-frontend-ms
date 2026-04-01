@@ -10,7 +10,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,8 +46,8 @@ public class CardServiceProdImpl implements CardService {
     }
 
     @Override
-    public TransactionResponse getCardStatementForPeriod(UUID cardId, LocalDateTime from, LocalDateTime to) {
-        final String url = "%s/statement/%s?from=%s&to=%s".formatted(cardServiceUrl, cardId, from, to);
+    public TransactionResponse getCardStatementForPeriod(String contractName, Instant from, Instant to) {
+        final String url = "%s/statement/%s?from=%s&to=%s".formatted(cardServiceUrl, contractName, from, to);
         log.debug("Calling card service to get statement: {}", url);
 
         return restTemplate.getForObject(url, TransactionResponse.class);

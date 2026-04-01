@@ -73,6 +73,178 @@
             border-radius: 16px;
             font-weight: 600;
         }
+
+        /* Стили для формы выписки */
+        .statement-form {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            border: 1px solid #eef2ff;
+        }
+
+        .statement-title {
+            font-size: 1.45rem;
+            margin: 0 0 8px 0;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .statement-title i {
+            color: #3b82f6;
+            font-size: 1.6rem;
+        }
+
+        .statement-subtitle {
+            color: #64748b;
+            margin-bottom: 28px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        .form-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .form-group label i {
+            color: #3b82f6;
+            font-size: 1rem;
+        }
+
+        .datetime-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+            background: #fafcff;
+        }
+
+        .datetime-input:hover {
+            border-color: #94a3b8;
+        }
+
+        .datetime-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+            background: white;
+        }
+
+        .quick-periods {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border: none;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .quick-btn:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .quick-btn i {
+            font-size: 0.8rem;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59,130,246,0.3);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn i {
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .statement-form {
+                padding: 24px;
+            }
+        }
+
+        /* Стили для существующих элементов */
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59,130,246,0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(239,68,68,0.3);
+        }
     </style>
 </head>
 <body>
@@ -168,22 +340,46 @@
                             <div class="label">Владелец</div>
                             <div class="value">${card.plasticName()!"—"}</div>
                         </div>
-                        <form method="get" action="/cards/statement">
-                            <input type="hidden" name="cardId" value="${card.id()}">
-
-                            <div>
-                                <label for="from">От</label>
-                                <input type="datetime-local" id="from" name="from" required>
-                            </div>
-
-                            <div>
-                                <label for="to">До</label>
-                                <input type="datetime-local" id="to" name="to" required>
-                            </div>
-
-                            <button type="submit">Посмотреть выписку</button>
-                        </form>
                     </div>
+                </div>
+
+                <!-- Красивая форма выписки -->
+                <div class="statement-form">
+                    <div class="statement-title">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Выписка по операциям</span>
+                    </div>
+                    <div class="statement-subtitle">
+                        Выберите период для просмотра истории операций по карте
+                    </div>
+
+                    <form method="get" action="/cards/statement" id="statementForm">
+                        <input type="hidden" name="contractName" value="${card.contractName()}">
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="from">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Начало периода
+                                </label>
+                                <input type="datetime-local" id="from" name="from" class="datetime-input" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="to">
+                                    <i class="fas fa-calendar-check"></i>
+                                    Конец периода
+                                </label>
+                                <input type="datetime-local" id="to" name="to" class="datetime-input" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="submit-btn">
+                            <i class="fas fa-chart-line"></i>
+                            Сформировать выписку
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </form>
                 </div>
 
                 <!-- Действия -->

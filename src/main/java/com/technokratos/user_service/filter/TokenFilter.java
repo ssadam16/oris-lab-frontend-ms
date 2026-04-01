@@ -3,11 +3,13 @@ package com.technokratos.user_service.filter;
 import com.technokratos.user_service.dto.UserDataTokenValidationResponse;
 import com.technokratos.user_service.service.UserService;
 import jakarta.servlet.*;
+import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -17,6 +19,7 @@ import java.util.UUID;
 
 @RequiredArgsConstructor
 @Slf4j
+@Order(1)
 @Component
 public class TokenFilter implements Filter {
 
@@ -44,7 +47,7 @@ public class TokenFilter implements Filter {
         log.info("User want to get {} resource, method {}", path, method);
 
 
-        UUID token = (UUID) session.getAttribute("token");
+        Object token = session.getAttribute("token");
 
         log.info("User access token: {}", token);
 

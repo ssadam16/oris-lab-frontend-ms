@@ -6,13 +6,11 @@ import com.technokratos.card_service.dto.TransactionResponse;
 import com.technokratos.card_service.service.CardService;
 import com.technokratos.exception.ServiceException;
 import com.technokratos.transfer_service.dto.ContractResponse;
-import com.technokratos.transfer_service.dto.TransactionItem;
 import com.technokratos.transfer_service.dto.TransactionRequest;
 import com.technokratos.transfer_service.service.TransferService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +21,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Controller
 @RequestMapping("/transfers")
@@ -70,7 +67,6 @@ public class TransferController {
 
         UUID userId = (UUID) session.getAttribute("userId");
 
-        // Валидация
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             redirectAttributes.addFlashAttribute("error", "Сумма должна быть больше 0");
             return "redirect:/transfers";
@@ -85,7 +81,6 @@ public class TransferController {
         }
 
         try {
-            // 1. Проверка источника
             CardResponse sourceCard = cardService.getCardInfoByContractName(sourceContractName);
             if (sourceCard == null || !sourceCard.userId().equals(userId) || sourceCard.closeFlag()) {
                 redirectAttributes.addFlashAttribute("error", "Карта отправителя недоступна");

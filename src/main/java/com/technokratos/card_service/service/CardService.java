@@ -7,6 +7,7 @@ import com.technokratos.card_service.dto.TransactionResponse;
 import com.technokratos.transfer_service.dto.TransactionItem;
 import org.jspecify.annotations.NonNull;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -17,7 +18,7 @@ public interface CardService {
 
     CardResponse openNewCardForUser(CardRequest request);
 
-    TransactionResponse getCardStatementForPeriod(UUID cardId, LocalDateTime from, LocalDateTime to);
+    TransactionResponse getCardStatementForPeriod(String contractName, Instant from, Instant to);
 
     CardProductResponse getCardProductById(UUID cardProductId);
 

@@ -1,5 +1,7 @@
 package com.technokratos.config;
 
+import com.technokratos.user_restriction_service.filter.CheckRestrictionsFilter;
+import com.technokratos.user_restriction_service.service.UserRestrictionService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
